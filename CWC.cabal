@@ -16,7 +16,7 @@ build-type:          Simple
 cabal-version:       >=1.10
 
 library
-  -- exposed-modules:     
+  exposed-modules: CWC     
   -- other-modules:       
   -- other-extensions:    
   build-depends:       base >=4.7 && <4.8
@@ -27,3 +27,5 @@ executable doorTimer
   main-is : doorTimer.hs
   hs-source-dirs:      executables
   build-depends:       base >=4.7 && <4.8
+                       , CWC
+                       , time
