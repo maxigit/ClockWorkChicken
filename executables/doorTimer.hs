@@ -10,7 +10,7 @@ main = do
   utc <- getCurrentTime
   zone <- getCurrentTimeZone
 
-  let state = setTime utc (GlobalState undefined zone Open Open)
+  let state = GlobalState utc zone Open Open)
 
   loop 1000 mainLoop state where
   mainLoop state = do
