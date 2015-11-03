@@ -2,12 +2,22 @@ module Main where
 
 import CWC
 
-import Data.Time.Clock (getCurrentTime)
-import Data.Time
+import Data.Time.Clock (getCurrentTime) 
+import Data.Time (getCurrentTimeZone)
 
-main :: IO ()
-main = loop 1000 mainLoop where
-  mainLoop = do
+main :: IO GlobalState
+main = do
+  utc <- getCurrentTime
+  zone <- getCurrentTimeZone
+
+  let state = setTime utc (GlobalState undefined zone Open Open)
+
+  loop 1000 mainLoop state where
+  mainLoop state = do
     utc <- getCurrentTime
-    print utc
+    let newState = setTime utc state
+    print newState
+    return newState
+
+
     
