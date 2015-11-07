@@ -8,6 +8,10 @@ import qualified Data.Time.Horizon as H
 data DoorState = Open | Closed
                 deriving (Show, Read)
 
+data WorldState = WorldState
+data Event = Even
+data PiState = PiState
+
 
 data GlobalState = GlobalState
   { currentTime :: UTCTime
@@ -56,6 +60,21 @@ expectedDoorState = do
   return $ if rise <= currentTime && currentTime <= set
              then Open
              else Closed
+
+-- * In
+world :: IO WorldState
+world = return WorldState
+
+-- * Out
+out :: PiState -> IO ()
+out _ = return ()
+
+-- | Analyse a world state and generate an event
+step :: WorldState -> WorldState -> Maybe Event
+step old new = Nothing
+
+transition :: PiState -> Event -> IO PiState
+transition pi _ = return pi
 
 
 -- * Misc Functions
