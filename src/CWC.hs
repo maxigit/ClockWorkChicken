@@ -3,6 +3,7 @@ module CWC where
 import Control.Concurrent (threadDelay)
 import Data.Time
 import qualified Data.Time.Horizon as H
+import Data.Automaton
 
 -- | State as in state machine
 data DoorState = Open | Closed
@@ -11,8 +12,8 @@ data DoorState = Open | Closed
 data WorldState = WorldState 
   { currentTime :: UTCTime
   }
-data Event = Even
-data PiState = PiState
+data Event = Even deriving (Show, Eq)
+data PiState = PiState deriving (Show, Eq)
 
 
 data Config = Config
@@ -26,8 +27,14 @@ data Config = Config
 data GlobalState = GlobalState 
   { config :: Config
   , world :: WorldState
-  , pi :: PiState
+  , piState :: PiState
   }
+
+instance Similar PiState where
+  a === b = a == b
+
+instance Similar GlobalState where
+  a === b = piState a === piState b
 
 utcZone = hoursToTimeZone 0
 minutesToDiffTime = fromInteger . (60*)
