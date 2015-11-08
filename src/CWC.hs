@@ -5,15 +5,36 @@ import Data.Time
 import qualified Data.Time.Horizon as H
 import Data.Automaton
 
+
 -- | State as in state machine
-data DoorState = Open | Closed
-                deriving (Show, Read)
+data DoorState = DoorOpened | DoorClosed
+                deriving (Show, Read, Eq)
 
 data WorldState = WorldState 
   { currentTime :: UTCTime
-  }
-data Event = Even deriving (Show, Eq)
-data PiState = PiState deriving (Show, Eq)
+  } deriving (Show, Read)
+
+data DisplayMode = TimeM
+                 | SunriseM
+                 | SunsetM
+                 | LongitudeM
+                 | LatitudeM
+    deriving (Show, Read, Eq, Ord, Enum, Bounded)
+
+data Event = Sunrise
+           | Sunset 
+           | OpenDoor
+           | CloseDoor
+           | Door DoorState
+           | Display DisplayMode
+     deriving (Show, Eq)
+
+data PiState = Closed
+             | Opening
+             | Opened
+             | Closing
+
+     deriving (Show, Read, Eq)
 
 
 data Config = Config
@@ -28,7 +49,7 @@ data GlobalState = GlobalState
   { config :: Config
   , world :: WorldState
   , piState :: PiState
-  }
+  } deriving (Show, Read)
 
 instance Similar PiState where
   a === b = a == b
@@ -69,8 +90,8 @@ expectedDoorState = do
   rise <- sunrise 
   currentTime <- utcTimeOfDay `fmap` (currentTime . world)
   return $ if rise <= currentTime && currentTime <= set
-             then Open
-             else Closed
+             then DoorOpened
+             else DoorClosed
 
 -- * In
 

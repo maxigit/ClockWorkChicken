@@ -5,8 +5,7 @@ import Control.Monad
 
 -- data or type class ?
 data Automaton m s ev = Automaton
-  { initial :: s -- initial state
-  , finished :: s -> Bool -- exitOn loop on 
+  { finished :: s -> Bool -- exitOn loop on 
   , enterState :: s -> s -> m ()
   , exitState :: Maybe s -> s -> m ()
   , transition :: s -> ev -> m s
