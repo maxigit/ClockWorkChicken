@@ -12,21 +12,31 @@ data Automaton m s ev = Automaton
 
   
 
--- runAutomaton :: MonadPlus m =>  Automaton m s ev -> s -> m ()
-runAutomaton autom evs state = do
+runAutomaton, runAutomaton' ::
+  (Monad m, Eq s)
+      => Automaton m s ev
+      -> m (Maybe ev)
+      -> s
+      -> s
+      -> m ()
+runAutomaton autom em state endState = do
   enter autom Nothing state 
-  runAutomaton' autom evs state
+  runAutomaton' autom em state endState
 
-runAutomaton' autom [] state = do
-  return ()
-
-runAutomaton' autom (ev:evs) state = do
-  newState <- transition autom state ev
-  when (newState /= state) $ do
-                          exit autom state newState
-                          enter autom (Just state) newState
+runAutomaton' autom em state endState = do
+  ev <- em
+  newState <- case ev of 
+    Nothing -> return state
+    Just ev -> do
+      newState <- transition autom state ev
+      when (newState /= state) $ do
+           exit autom state newState
+           enter autom (Just state) newState
+      return newState
   
-  runAutomaton' autom evs newState
+  if newState == endState
+    then return ()
+    else runAutomaton' autom em newState endState
 
 a = Automaton
     (\s s' -> putStrLn $ "exit from " ++ show s)
