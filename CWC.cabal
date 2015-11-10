@@ -31,3 +31,4 @@ executable doorTimer
   build-depends:       base >=4.7 && <4.8
                        , CWC
                        , time
+                       , mtl, transformers

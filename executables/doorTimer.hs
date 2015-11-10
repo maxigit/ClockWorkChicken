@@ -3,10 +3,31 @@ module Main where
 import CWC
 import Data.Automaton
 
-import Data.Time.Clock (getCurrentTime) 
+import Data.Time.Clock (getCurrentTime, UTCTime) 
 import Data.Time (getCurrentTimeZone)
+import Control.Monad.State
+import Control.Monad.Reader
+import Control.Monad.IO.Class
 
--- automaton :: Automaton 
+data RPI mi mo = RPI 
+  { readPin :: Int -> mi Double
+  , readTime :: mi UTCTime
+  , writePin :: Int -> Double -> mo ()
+  }
+
+testPI  = RPI 
+  readPin
+  readTime
+  writePin where
+    readPin pin = do
+      putStrLn ("read pin #" ++ show pin)
+      fmap read getLine
+    readTime = do
+      getCurrentTime
+    writePin pin value = do
+      putStrLn ("write pin #" ++ show pin ++ " -> " ++ show value)
+
+automaton :: Automaton (StateT WorldState IO) PiState Event
 automaton = Automaton exitOn
                       enterState 
                       exitState
@@ -15,15 +36,21 @@ automaton = Automaton exitOn
 
   exitOn s = False
   enterState old new = do
-    enterState' (piState old) (piState new)
-    print new
-  enterState' _ Closing = print "close door"
-  enterState' _ Opening = print "open door"
+    enterState' old new
+    liftIO (print new)
+  enterState' _ Closing = liftIO (print "close door")
+  enterState' _ Opening = liftIO (print "open door" )
   enterState' _ _ = return ()
 
+-- How to update currentTime in an automaton context
+-- use state monad with world state ?
+-- so that nextEvent can access and modify it ?
+--
+-- we need also a way to "tick", ie modify the state
+-- even though nothing happend
   exitState old new = return ()
   nextEvent = do
-    command <- getChar
+    command <- liftIO getChar
     return $ case command of
                 'd' -> Just Sunrise -- day
                 'n' -> Just Sunset -- night
@@ -33,14 +60,11 @@ automaton = Automaton exitOn
                 'C' -> Just (Door DoorClosed)
                 _ -> Nothing
 
-  transition state ev = return $ case transition' (piState state) ev  of
-    Nothing -> state
-    Just p ->  state { piState = p }
-  transition' Closed Sunrise =  Just Opening
-  transition' Closing (Door DoorClosed) =  Just Closed
-  transition' Opened Sunset = Just Closing
-  transition' Opening (Door DoorOpened) = Just Opened
-  transition' _ _ = Nothing
+  transition Closed Sunrise =  Opening
+  transition Closing (Door DoorClosed) =  Closed
+  transition Opened Sunset = Closing
+  transition Opening (Door DoorOpened) = Opened
+  transition state _ = state
       
       
 
@@ -52,7 +76,8 @@ main = do
   let config = Config zone
                   (20/60) (53.75)
                   0 0 
-      global = GlobalState config (WorldState utc) Closed
+      world = WorldState utc
+      global = GlobalState config world Closed
 
-  runAutomaton automaton global
+  evalStateT (runAutomaton automaton Closed) world
 
