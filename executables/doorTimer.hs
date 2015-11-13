@@ -37,7 +37,10 @@ automaton = Automaton exitOn
   exitOn s = False
   enterState old new = do
     enterState' old new
-    liftIO (print new)
+    state <- get
+    liftIO (putStrLn $ show old ++ " -> " ++ show new)
+    liftIO (putStr "\t")
+    liftIO (print state)
   enterState' _ Closing = liftIO (print "close door")
   enterState' _ Opening = liftIO (print "open door" )
   enterState' _ _ = return ()
@@ -51,14 +54,21 @@ automaton = Automaton exitOn
   exitState old new = return ()
   nextEvent = do
     command <- liftIO getChar
-    return $ case command of
-                'd' -> Just Sunrise -- day
-                'n' -> Just Sunset -- night
-                'o' -> Just OpenDoor -- open
-                'c' -> Just CloseDoor -- close
-                'O' -> Just (Door DoorOpened)
-                'C' -> Just (Door DoorClosed)
-                _ -> Nothing
+    case command of
+              'd' -> return $ Just Sunrise -- day
+              'n' -> return $ Just Sunset -- night
+              'o' -> return $ Just OpenDoor -- open
+              'c' -> return $ Just CloseDoor -- close
+              'O' -> return $ Just (Door DoorOpened)
+              'C' -> return $ Just (Door DoorClosed)
+              't' -> do
+                utc <- liftIO getCurrentTime
+                modify (const (WorldState utc))
+                s <- get
+                liftIO (print (show s))
+                return Nothing
+                
+              _ -> return Nothing
 
   transition Closed Sunrise =  Opening
   transition Closing (Door DoorClosed) =  Closed
