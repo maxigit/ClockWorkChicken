@@ -12,7 +12,7 @@ data Automaton m s ev = Automaton
   { finished :: s -> Bool -- exitOn loop on 
   , enterState :: Maybe s -> s -> m () -- call when state change
   , exitState :: s -> s -> m () -- call when  state change
-  , transition :: s -> ev -> s 
+  , transition :: ev -> s -> s 
   , nextEvent :: m (Maybe  ev) -- get the next even from the outside world
   }
 
@@ -37,7 +37,7 @@ runAutomaton' autom state = do
   newState <- case ev of
     Nothing -> return state
     Just ev -> do
-      let newState = transition autom state ev
+      let newState = transition autom ev state 
       when (newState /== state) $ do
            exitState autom state newState
       return newState

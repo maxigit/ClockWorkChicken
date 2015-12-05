@@ -27,6 +27,9 @@ data DisplayMode = TimeM
                  | LatitudeM
     deriving (Show, Read, Eq, Ord, Enum, Bounded)
 
+nextDisplayMode :: DisplayMode -> DisplayMode
+nextDisplayMode mode | mode == maxBound = minBound
+nextDisplayMode mode = succ mode
 -- | Event to react on
 -- Open/Close are command send by the user.
 -- An open door, will stay open until a sunrise even occurs.
@@ -121,6 +124,10 @@ expectedDoorState = do
 data PiIO m = PiIO
   { readWorld :: GState m WorldState
   , displayWorld :: WorldState -> DisplayMode -> GState m ()
+  , openDoor :: GState m ()
+  , closeDoor :: GState m ()
+  , lockDoor :: GState m ()
+  , unlockDoor :: GState m ()
   }
 
 -- * Out
@@ -145,7 +152,12 @@ automaton = Automaton exitOn
     ex <- gets (extension.io)
     (displayWorld ex) (worldState) (displayMode new)
     go old new
+
     where go Nothing _ = return ()
+          go _ state | doorState state == Opening
+                     = gets (extension.io) >>= openDoor
+          go _ state | doorState state == Closing
+                     = gets (extension.io) >>= closeDoor
           go _ _ = return ()
 
   exitState _ _ = return () -- @todo
@@ -158,8 +170,23 @@ automaton = Automaton exitOn
     put global { world =  newWorld }
     return (step oldWorld newWorld)
 
-  transition _ _ = undefined
+  transition ev state
+    | ev `elem` [Sunrise, OpenDoor]
+       && doorState state `elem` [DoorClosed, Closing]
+       = state {  doorState = Opening }
 
+    | ev `elem` [Sunset, CloseDoor]
+       && doorState state `elem` [DoorOpened, Opening]
+       = state {  doorState = Closing }
+
+  transition (Door Closed) state = state { doorState = DoorClosed }
+  transition (Door Opened) state = state { doorState = DoorOpened }
+
+  transition NextDisplayMode state = state { displayMode = nextDisplayMode (displayMode state) }
+
+
+    
+    
     
   
   
