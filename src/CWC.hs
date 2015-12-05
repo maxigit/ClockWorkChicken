@@ -1,5 +1,6 @@
 module CWC where
 
+import System.RaspberryPi
 import Control.Concurrent (threadDelay)
 import Data.Time
 import qualified Data.Time.Horizon as H
@@ -62,10 +63,13 @@ data Config = Config
   } deriving (Show, Read)
 
 -- | State combining everything
-data GlobalState = GlobalState 
+data GlobalState m = GlobalState 
   { config :: Config
   , world :: WorldState
-  } deriving (Show, Read)
+  , io :: Pi m (PiIO m)
+  } 
+
+type GState m = StateT (GlobalState m) m
 
 instance Similar PiState where
   a === b = a == b
@@ -82,7 +86,7 @@ utcTimeOfDay :: UTCTime -> TimeOfDay
 utcTimeOfDay = localTimeOfDay . utcToLocalTime utcZone
   
   
-sunset, sunrise :: GlobalState -> TimeOfDay
+sunset, sunrise :: GlobalState m -> TimeOfDay
 -- Compute the sunset time corresponding to the GlobalState
 sunset = do
   day <- currentDay . world
@@ -103,7 +107,7 @@ sunrise = do
 
 -- Check what is the expected door state according
 -- to the current time and configuration
-expectedDoorState :: GlobalState -> OpenClose
+expectedDoorState :: GlobalState m -> OpenClose
 expectedDoorState = do
   set <- sunset 
   rise <- sunrise 
@@ -113,23 +117,23 @@ expectedDoorState = do
              else Closed
 
 -- * In
-readWorld :: Monad m =>  StateT GlobalState m WorldState
-readWorld = undefined -- @todo
+-- * Pi IO extension
+data PiIO m = PiIO
+  { readWorld :: GState m WorldState
+  , displayWorld :: WorldState -> DisplayMode -> GState m ()
+  }
 
 -- * Out
 out :: PiState -> PiState -> IO ()
 out _ _ = return ()
 
-displayWorld :: Monad m => WorldState -> DisplayMode -> m ()
-displayWorld = undefined
-  
 -- | Analyse a world state and generate an event
 step :: WorldState -> WorldState -> Maybe Event
 step old new = Nothing
 
 -- * Automaton
 
-automaton :: Monad m => Automaton (StateT GlobalState m) PiState Event
+automaton :: Monad m => Automaton (GState m) PiState Event
 automaton = Automaton exitOn
                       enterState 
                       exitState
@@ -138,7 +142,8 @@ automaton = Automaton exitOn
   exitOn s = False
   enterState old new = do
     worldState <- gets world
-    displayWorld (worldState) (displayMode new)
+    ex <- gets (extension.io)
+    (displayWorld ex) (worldState) (displayMode new)
     go old new
     where go Nothing _ = return ()
           go _ _ = return ()
@@ -148,7 +153,8 @@ automaton = Automaton exitOn
   nextEvent = do
     global <- get
     let oldWorld = world global
-    newWorld <- readWorld
+    ex <- gets (extension.io)
+    newWorld <- readWorld ex
     put global { world =  newWorld }
     return (step oldWorld newWorld)
 
