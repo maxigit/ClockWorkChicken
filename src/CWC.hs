@@ -89,35 +89,44 @@ utcTimeOfDay :: UTCTime -> TimeOfDay
 utcTimeOfDay = localTimeOfDay . utcToLocalTime utcZone
   
   
-sunset, sunrise :: GlobalState m -> TimeOfDay
+sunset, sunrise :: Monad m => GState  m TimeOfDay
 -- Compute the sunset time corresponding to the GlobalState
 sunset = do
-  day <- currentDay . world
-  long <- longitute .config
-  lat <- latitude .config
-  offset <- minutesToDiffTime `fmap` ( sunsetOffset . config)
+  day <- gets (currentDay . world)
+  long <- gets (longitute .config)
+  lat <- gets (latitude .config)
+  offset <- minutesToDiffTime `liftM` (gets $ sunsetOffset . config)
   return $ utcTimeOfDay (addUTCTime offset (H.sunset day long lat))
 
 -- Compute the sunrise time corresponding to the GlobalState
 sunrise = do
-  day <- currentDay . world
-  long <- longitute . config
-  lat <- latitude .config 
-  offset <- minutesToDiffTime . (sunriseOffset . config)
-  return $ utcTimeOfDay ( addUTCTime offset (H.sunset day long lat))
+  day <- gets (currentDay . world)
+  long <- gets (longitute .config)
+  lat <- gets (latitude .config)
+  offset <- minutesToDiffTime `liftM` (gets $ sunriseOffset . config)
+  return $ utcTimeOfDay (addUTCTime offset (H.sunrise day long lat))
 
 
 
 -- Check what is the expected door state according
 -- to the current time and configuration
-expectedDoorState :: GlobalState m -> OpenClose
+expectedDoorState :: Monad m => GState m OpenClose
 expectedDoorState = do
   set <- sunset 
   rise <- sunrise 
-  currentTime <- utcTimeOfDay `fmap` (currentTime . world)
+  currentTime <- utcTimeOfDay `liftM` (gets $ currentTime . world)
   return $ if rise <= currentTime && currentTime <= set
              then Opened
              else Closed
+
+
+displayFromState :: Monad m => DisplayMode ->  GState  m String
+displayFromState TimeM = liftM show $ gets (currentTime.world)
+displayFromState SunriseM = liftM (("^ "++) . show) $ sunrise
+displayFromState SunsetM = liftM (("v "++) . show) $ sunset
+displayFromState LongitudeM = liftM (("Lo "++) . show) $ gets (longitute.config)
+displayFromState LatitudeM = liftM (("La "++) . show) $ gets (latitude.config)
+
 
 -- * In
 -- * Pi IO extension
@@ -128,6 +137,7 @@ data PiIO m = PiIO
   , closeDoor :: GState m ()
   , lockDoor :: GState m ()
   , unlockDoor :: GState m ()
+  , displayTime :: UTCTime -> GState m ()
   }
 
 -- * Out
