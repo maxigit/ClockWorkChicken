@@ -5,10 +5,11 @@ import Data.Time
 import qualified Data.Time.Horizon as H
 import Data.Automaton
 
+import Control.Monad.State
 
 -- * State
 -- | The state (actual or desired) of a door
-data DoorState = DoorOpened | DoorClosed
+data OpenClose = Opened | Closed
                 deriving (Show, Read, Eq)
 
 -- | Input coming from the outside world
@@ -26,22 +27,29 @@ data DisplayMode = TimeM
     deriving (Show, Read, Eq, Ord, Enum, Bounded)
 
 -- | Event to react on
-data Event = Sunrise
+-- Open/Close are command send by the user.
+-- An open door, will stay open until a sunrise even occurs.
+data Event = Sunrise 
            | Sunset 
-           | OpenDoor
+           | OpenDoor -- ^ Overwride door status
            | CloseDoor
-           | Door DoorState
-           | Display DisplayMode
+           | Door OpenClose -- ^ Door state changes
+           | NextDisplayMode
      deriving (Show, Eq)
 
 -- | Abstract state of the PI
 -- will be converted in GPIO action
-data PiState = Closed
+data DoorState = DoorClosed
              | Opening
-             | Opened
+             | DoorOpened
              | Closing
-
      deriving (Show, Read, Eq)
+
+data PiState = PiState
+  { doorState ::   DoorState 
+  , lockState :: DoorState
+  , displayMode :: DisplayMode
+  } deriving (Show, Read, Eq)
 
 
 -- | Miscellaneous configuration
@@ -57,14 +65,10 @@ data Config = Config
 data GlobalState = GlobalState 
   { config :: Config
   , world :: WorldState
-  , piState :: PiState
   } deriving (Show, Read)
 
 instance Similar PiState where
   a === b = a == b
-
-instance Similar GlobalState where
-  a === b = piState a === piState b
 
 -- * Time related functions
 
@@ -99,29 +103,61 @@ sunrise = do
 
 -- Check what is the expected door state according
 -- to the current time and configuration
-expectedDoorState :: GlobalState -> DoorState
+expectedDoorState :: GlobalState -> OpenClose
 expectedDoorState = do
   set <- sunset 
   rise <- sunrise 
   currentTime <- utcTimeOfDay `fmap` (currentTime . world)
   return $ if rise <= currentTime && currentTime <= set
-             then DoorOpened
-             else DoorClosed
+             then Opened
+             else Closed
 
 -- * In
+readWorld :: Monad m =>  StateT GlobalState m WorldState
+readWorld = undefined -- @todo
 
 -- * Out
-out :: PiState -> IO ()
-out _ = return ()
+out :: PiState -> PiState -> IO ()
+out _ _ = return ()
 
+displayWorld :: Monad m => WorldState -> DisplayMode -> m ()
+displayWorld = undefined
+  
 -- | Analyse a world state and generate an event
 step :: WorldState -> WorldState -> Maybe Event
 step old new = Nothing
 
-transition :: PiState -> Event -> IO PiState
-transition pi _ = return pi
-
 -- * Automaton
+
+automaton :: Monad m => Automaton (StateT GlobalState m) PiState Event
+automaton = Automaton exitOn
+                      enterState 
+                      exitState
+                      transition
+                      nextEvent where
+  exitOn s = False
+  enterState old new = do
+    worldState <- gets world
+    displayWorld (worldState) (displayMode new)
+    go old new
+    where go Nothing _ = return ()
+          go _ _ = return ()
+
+  exitState _ _ = return () -- @todo
+
+  nextEvent = do
+    global <- get
+    let oldWorld = world global
+    newWorld <- readWorld
+    put global { world =  newWorld }
+    return (step oldWorld newWorld)
+
+  transition _ _ = undefined
+
+    
+  
+  
+
 
 -- * Misc Functions
 -- | Loop the given action every n millisecond.

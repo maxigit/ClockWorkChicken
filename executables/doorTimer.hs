@@ -87,7 +87,6 @@ main = do
                   (20/60) (53.75)
                   0 0 
       world = WorldState utc
-      global = GlobalState config world Closed
 
   evalStateT (runAutomaton automaton Closed) world
 
