@@ -6,14 +6,18 @@ import qualified Data.Time.Horizon as H
 import Data.Automaton
 
 
--- | State as in state machine
+-- * State
+-- | The state (actual or desired) of a door
 data DoorState = DoorOpened | DoorClosed
                 deriving (Show, Read, Eq)
 
+-- | Input coming from the outside world
+-- hold current time, and the state of different sensors
 data WorldState = WorldState 
   { currentTime :: UTCTime
   } deriving (Show, Read)
 
+-- | What to display on the screen/LCD
 data DisplayMode = TimeM
                  | SunriseM
                  | SunsetM
@@ -21,6 +25,7 @@ data DisplayMode = TimeM
                  | LatitudeM
     deriving (Show, Read, Eq, Ord, Enum, Bounded)
 
+-- | Event to react on
 data Event = Sunrise
            | Sunset 
            | OpenDoor
@@ -29,6 +34,8 @@ data Event = Sunrise
            | Display DisplayMode
      deriving (Show, Eq)
 
+-- | Abstract state of the PI
+-- will be converted in GPIO action
 data PiState = Closed
              | Opening
              | Opened
@@ -37,6 +44,7 @@ data PiState = Closed
      deriving (Show, Read, Eq)
 
 
+-- | Miscellaneous configuration
 data Config = Config
   { timeZone :: TimeZone
   , longitute :: H.LongitudeWest
@@ -45,6 +53,7 @@ data Config = Config
   , sunriseOffset :: Integer
   } deriving (Show, Read)
 
+-- | State combining everything
 data GlobalState = GlobalState 
   { config :: Config
   , world :: WorldState
@@ -57,6 +66,8 @@ instance Similar PiState where
 instance Similar GlobalState where
   a === b = piState a === piState b
 
+-- * Time related functions
+
 utcZone = hoursToTimeZone 0
 minutesToDiffTime = fromInteger . (60*)
 
@@ -68,6 +79,7 @@ utcTimeOfDay = localTimeOfDay . utcToLocalTime utcZone
   
   
 sunset, sunrise :: GlobalState -> TimeOfDay
+-- Compute the sunset time corresponding to the GlobalState
 sunset = do
   day <- currentDay . world
   long <- longitute .config
@@ -75,6 +87,7 @@ sunset = do
   offset <- minutesToDiffTime `fmap` ( sunsetOffset . config)
   return $ utcTimeOfDay (addUTCTime offset (H.sunset day long lat))
 
+-- Compute the sunrise time corresponding to the GlobalState
 sunrise = do
   day <- currentDay . world
   long <- longitute . config
@@ -84,6 +97,8 @@ sunrise = do
 
 
 
+-- Check what is the expected door state according
+-- to the current time and configuration
 expectedDoorState :: GlobalState -> DoorState
 expectedDoorState = do
   set <- sunset 
