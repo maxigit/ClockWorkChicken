@@ -1,55 +1,61 @@
 module CWCSpec where
 
 import CWC
+import Data.Automaton
+import System.RaspberryPi
+
+-- import System.RaspberryPi.Mock.IO
+
 import Control.Monad.State
 import Data.Time
 import Data.Time.LocalTime
-import Test.Hspec
-import Test.HUnit
-liftIO2  action a = liftIO . action a
+
+import Test.Hspec hiding(shouldBe)
+import Test.Hspec.Expectations.Lifted(shouldBe)
+-- import Test.HUnit
 
 spec :: Spec
 spec = do
-  describe "Sunset/Sunrise" $ do
-    let zone = utc
-        defConfig = Config zone
-                    (-2.3508) (48.8567) 
-                    0 0
-        defWorld = WorldState $ UTCTime (fromGregorian 2015 12 03) 0
-        io = error "io not defined @toto"
-        defGlobal :: GlobalState IO
-        defGlobal = GlobalState defConfig defWorld io
+  let zone = utc
+      defConfig = Config zone
+                  (-2.3508) (48.8567) 
+                  0 0
+      defWorld = WorldState $ UTCTime (fromGregorian 2015 12 03) 0
+      defExtension :: PiIO IO
+      defExtension = undefined 
+      defIo = Pi undefined undefined defExtension undefined
+      defGlobal :: GlobalState IO
+      defGlobal = GlobalState defConfig defWorld defIo
       
+  describe "Sunset/Sunrise" $ do
     context "without time offsets" $ do
       context "Paris 03 Dec 2015" $ do
         let parisSunrise = TimeOfDay (08-1) 26 11
             parisSunset = TimeOfDay (16-1) 57 18
             global = defGlobal { world = defWorld { currentTime =
               UTCTime (fromGregorian 2015 12 03) 0 }}
-            shouldBe' = liftIO2 shouldBe
 
         it "should have correct sunrise" $ flip evalStateT global $ do
           rise <- sunrise
-          rise `shouldBe'` parisSunrise
+          rise `shouldBe` parisSunrise
 
         it "should have correct sunset" $ flip evalStateT global $ do
           set <- sunset
-          set `shouldBe'` parisSunset
+          set `shouldBe` parisSunset
 
       context "Paris 03 Jun 2016" $ do
         let parisSunrise = TimeOfDay (05-2) 52 02
             parisSunset = TimeOfDay (21-2) 48 16
             global = defGlobal { world = defWorld { currentTime =
               UTCTime (fromGregorian 2015 06 03) 0 }}
-            shouldBe' = liftIO2 shouldBe
 
         it "should have correct sunrise" $ flip evalStateT global $ do
           rise <- sunrise
-          rise `shouldBe'` parisSunrise
+          rise `shouldBe` parisSunrise
 
         it "should have correct sunset" $ flip evalStateT global $ do
           set <- sunset
-          set `shouldBe'` parisSunset
+          set `shouldBe` parisSunset
 
     context "with time offset" $ do
       let config = defConfig { sunriseOffset = 30 
@@ -62,15 +68,14 @@ spec = do
               UTCTime (fromGregorian 2015 12 03) 0 }
               , config = config
               }
-            shouldBe' = liftIO2 shouldBe
 
         it "should have correct sunrise" $ flip evalStateT global $ do
           rise <- sunrise
-          rise `shouldBe'` parisSunrise
+          rise `shouldBe` parisSunrise
 
         it "should have correct sunset" $ flip evalStateT global $ do
           set <- sunset
-          set `shouldBe'` parisSunset
+          set `shouldBe` parisSunset
 
       context "Paris 03 Jun 2016" $ do
         let parisSunrise = TimeOfDay (05-2+1) 22 02
@@ -79,20 +84,31 @@ spec = do
               UTCTime (fromGregorian 2015 06 03) 0 }
               , config = config
               }
-            shouldBe' = liftIO2 shouldBe
 
         it "should have correct sunrise" $ flip evalStateT global $ do
           rise <- sunrise
-          rise `shouldBe'` parisSunrise
+          rise `shouldBe` parisSunrise
 
         it "should have correct sunset" $ flip evalStateT global $ do
           set <- sunset
-          set `shouldBe'` parisSunset
+          set `shouldBe` parisSunset
 
   describe "event generation" $ do
     context "when sunrise" $ do
-      it "should send a SUNRISE event"
-        pending
+      -- stub readlWorld to change the current time to day
+      let readWorld' :: GState IO WorldState
+          readWorld' = undefined
+          global :: GlobalState IO 
+          global = defGlobal { io
+                             = defIo { extension
+                                     = (extension defIo)
+                                    { readWorld = readWorld' } }
+                              }
+                                              
+      it "should send a SUNRISE event" $ flip evalStateT global $ do
+        ev <- nextEvent automaton
+        ev `shouldBe` (Just Sunrise)
+
     context "when sunset" $ do
       it "should send a SUNSET event"
         pending

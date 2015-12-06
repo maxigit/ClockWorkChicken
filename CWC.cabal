@@ -50,5 +50,6 @@ test-suite hspec
         , time
         , horizon
         , mtl, transformers
+        , hspec-expectations-lifted
     default-language: Haskell2010
 
