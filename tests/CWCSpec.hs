@@ -14,7 +14,7 @@ spec = do
     context "without time offset" $ do
       let zone = utc
           defConfig = Config zone
-                      (48.8567) (2.3508)
+                      (-2.3508) (48.8567) 
                       0 0
           defWorld = WorldState $ UTCTime (fromGregorian 2015 12 03) 0
           io = error "io not defined @toto"
@@ -23,8 +23,8 @@ spec = do
       
 
       context "Paris 03 Dec 2015" $ do
-        let parisSunrise = TimeOfDay 08 25 00
-            parisSunset = TimeOfDay 16 56 00
+        let parisSunrise = TimeOfDay (08-1) 26 11
+            parisSunset = TimeOfDay (16-1) 57 18
             global = defGlobal { world = defWorld { currentTime =
               UTCTime (fromGregorian 2015 12 03) 0 }}
             shouldBe' = liftIO2 shouldBe
@@ -38,8 +38,8 @@ spec = do
           set `shouldBe'` parisSunset
 
       context "Paris 03 Jun 2016" $ do
-        let parisSunrise = TimeOfDay 05 51 00
-            parisSunset = TimeOfDay 21 47 00
+        let parisSunrise = TimeOfDay (05-2) 52 02
+            parisSunset = TimeOfDay (21-2) 48 16
             global = defGlobal { world = defWorld { currentTime =
               UTCTime (fromGregorian 2015 06 03) 0 }}
             shouldBe' = liftIO2 shouldBe
