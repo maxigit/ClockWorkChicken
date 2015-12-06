@@ -22,8 +22,17 @@ spec = do
                   0 0
       defWorld = WorldState $ UTCTime (fromGregorian 2015 12 03) 0
       defExtension :: PiIO IO
-      defExtension = undefined 
-      defIo = Pi undefined undefined defExtension undefined
+      defExtension = PiIO (error "readlWorld") 
+                          (error "displayWorld")
+                          (error "openDoor")
+                          (error "closeDoor")
+                          (error "lockDoor")
+                          (error "unlockDoor")
+                          (error "@todo displayTime")
+      defIo = Pi (error "readPin")
+                 (error "writePin")
+                 defExtension
+                (error "run")
       defGlobal :: GlobalState IO
       defGlobal = GlobalState defConfig defWorld defIo
       
@@ -97,7 +106,11 @@ spec = do
     context "when sunrise" $ do
       -- stub readlWorld to change the current time to day
       let readWorld' :: GState IO WorldState
-          readWorld' = undefined
+          readWorld' = do
+            let newTime = error "new time"
+            world <- gets world
+            return world { currentTime = newTime }
+
           global :: GlobalState IO 
           global = defGlobal { io
                              = defIo { extension
