@@ -47,5 +47,8 @@ test-suite hspec
     build-depends:
         base, hspec, HUnit
         , CWC
+        , time
+        , horizon
+        , mtl, transformers
     default-language: Haskell2010
 

@@ -2,6 +2,7 @@
 module Data.Automaton
 ( Automaton(..)
 , Similar(..)
+, runAutomaton
 ) where
 
 import Control.Monad
