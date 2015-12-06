@@ -11,17 +11,16 @@ liftIO2  action a = liftIO . action a
 spec :: Spec
 spec = do
   describe "Sunset/Sunrise" $ do
-    context "without time offset" $ do
-      let zone = utc
-          defConfig = Config zone
-                      (-2.3508) (48.8567) 
-                      0 0
-          defWorld = WorldState $ UTCTime (fromGregorian 2015 12 03) 0
-          io = error "io not defined @toto"
-          defGlobal :: GlobalState IO
-          defGlobal = GlobalState defConfig defWorld io
+    let zone = utc
+        defConfig = Config zone
+                    (-2.3508) (48.8567) 
+                    0 0
+        defWorld = WorldState $ UTCTime (fromGregorian 2015 12 03) 0
+        io = error "io not defined @toto"
+        defGlobal :: GlobalState IO
+        defGlobal = GlobalState defConfig defWorld io
       
-
+    context "without time offsets" $ do
       context "Paris 03 Dec 2015" $ do
         let parisSunrise = TimeOfDay (08-1) 26 11
             parisSunset = TimeOfDay (16-1) 57 18
@@ -42,6 +41,44 @@ spec = do
             parisSunset = TimeOfDay (21-2) 48 16
             global = defGlobal { world = defWorld { currentTime =
               UTCTime (fromGregorian 2015 06 03) 0 }}
+            shouldBe' = liftIO2 shouldBe
+
+        it "should have correct sunrise" $ flip evalStateT global $ do
+          rise <- sunrise
+          rise `shouldBe'` parisSunrise
+
+        it "should have correct sunset" $ flip evalStateT global $ do
+          set <- sunset
+          set `shouldBe'` parisSunset
+
+    context "with time offset" $ do
+      let config = defConfig { sunriseOffset = 30 
+                             , sunsetOffset = -30
+                             }
+      context "Paris 03 Dec 2015" $ do
+        let parisSunrise = TimeOfDay (08-1) 56 11
+            parisSunset = TimeOfDay (16-1) 27 18
+            global = defGlobal { world = defWorld { currentTime =
+              UTCTime (fromGregorian 2015 12 03) 0 }
+              , config = config
+              }
+            shouldBe' = liftIO2 shouldBe
+
+        it "should have correct sunrise" $ flip evalStateT global $ do
+          rise <- sunrise
+          rise `shouldBe'` parisSunrise
+
+        it "should have correct sunset" $ flip evalStateT global $ do
+          set <- sunset
+          set `shouldBe'` parisSunset
+
+      context "Paris 03 Jun 2016" $ do
+        let parisSunrise = TimeOfDay (05-2+1) 22 02
+            parisSunset = TimeOfDay (21-2) 18 16
+            global = defGlobal { world = defWorld { currentTime =
+              UTCTime (fromGregorian 2015 06 03) 0 }
+              , config = config
+              }
             shouldBe' = liftIO2 shouldBe
 
         it "should have correct sunrise" $ flip evalStateT global $ do
