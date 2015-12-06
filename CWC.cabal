@@ -38,3 +38,14 @@ executable doorTimer
                        , CWC
                        , time
                        , mtl, transformers
+
+test-suite hspec
+    type: exitcode-stdio-1.0
+    main-is: Spec.hs
+    hs-source-dirs: tests,src 
+
+    build-depends:
+        base, hspec, HUnit
+        , CWC
+    default-language: Haskell2010
+
