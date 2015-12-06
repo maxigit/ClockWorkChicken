@@ -45,11 +45,11 @@ spec = do
               UTCTime (fromGregorian 2015 12 03) 0 }}
 
         it "should have correct sunrise" $ flip evalStateT global $ do
-          rise <- sunrise
+          rise <- liftG sunrise
           rise `shouldBe` parisSunrise
 
         it "should have correct sunset" $ flip evalStateT global $ do
-          set <- sunset
+          set <- liftG sunset
           set `shouldBe` parisSunset
 
       context "Paris 03 Jun 2016" $ do
@@ -59,11 +59,11 @@ spec = do
               UTCTime (fromGregorian 2015 06 03) 0 }}
 
         it "should have correct sunrise" $ flip evalStateT global $ do
-          rise <- sunrise
+          rise <- liftG sunrise
           rise `shouldBe` parisSunrise
 
         it "should have correct sunset" $ flip evalStateT global $ do
-          set <- sunset
+          set <- liftG sunset
           set `shouldBe` parisSunset
 
     context "with time offset" $ do
@@ -79,11 +79,11 @@ spec = do
               }
 
         it "should have correct sunrise" $ flip evalStateT global $ do
-          rise <- sunrise
+          rise <- liftG sunrise
           rise `shouldBe` parisSunrise
 
         it "should have correct sunset" $ flip evalStateT global $ do
-          set <- sunset
+          set <- liftG sunset
           set `shouldBe` parisSunset
 
       context "Paris 03 Jun 2016" $ do
@@ -95,11 +95,11 @@ spec = do
               }
 
         it "should have correct sunrise" $ flip evalStateT global $ do
-          rise <- sunrise
+          rise <- liftG sunrise
           rise `shouldBe` parisSunrise
 
         it "should have correct sunset" $ flip evalStateT global $ do
-          set <- sunset
+          set <- liftG sunset
           set `shouldBe` parisSunset
 
   describe "event generation" $ do
@@ -107,8 +107,9 @@ spec = do
       -- stub readlWorld to change the current time to day
       let readWorld' :: GState IO WorldState
           readWorld' = do
-            let newTime = error "new time"
             world <- gets world
+            let time = currentTime world
+            let newTime = time { utctDayTime = 12*3600 }
             return world { currentTime = newTime }
 
           global :: GlobalState IO 

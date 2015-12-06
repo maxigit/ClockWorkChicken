@@ -13,6 +13,8 @@ import Control.Monad.State
 data OpenClose = Opened | Closed
                 deriving (Show, Read, Eq)
 
+data DayNight = Daytime | Nighttime deriving (Show, Read, Eq)
+
 -- | Input coming from the outside world
 -- hold current time, and the state of different sensors
 data WorldState = WorldState 
@@ -89,41 +91,48 @@ utcTimeOfDay :: UTCTime -> TimeOfDay
 utcTimeOfDay = localTimeOfDay . utcToLocalTime utcZone
   
   
-sunset, sunrise :: Monad m => GState  m TimeOfDay
+sunset, sunrise :: Config -> WorldState -> TimeOfDay
 -- Compute the sunset time corresponding to the GlobalState
-sunset = do
-  day <- gets (currentDay . world)
-  long <- gets (longitute .config)
-  lat <- gets (latitude .config)
-  offset <- minutesToDiffTime `liftM` (gets $ sunsetOffset . config)
-  return $ utcTimeOfDay (addUTCTime offset (H.sunset day long lat))
+sunset conf world = let
+  day = currentDay world
+  long = longitute conf
+  lat = latitude conf
+  offset = minutesToDiffTime (sunsetOffset conf)
+  in utcTimeOfDay (addUTCTime offset (H.sunset day long lat))
 
 -- Compute the sunrise time corresponding to the GlobalState
-sunrise = do
-  day <- gets (currentDay . world)
-  long <- gets (longitute .config)
-  lat <- gets (latitude .config)
-  offset <- minutesToDiffTime `liftM` (gets $ sunriseOffset . config)
-  return $ utcTimeOfDay (addUTCTime offset (H.sunrise day long lat))
+sunrise conf world = let
+  day = currentDay world
+  long = longitute conf
+  lat = latitude conf
+  offset = minutesToDiffTime (sunriseOffset conf)
+  in utcTimeOfDay (addUTCTime offset (H.sunrise day long lat))
 
 
 
 -- Check what is the expected door state according
 -- to the current time and configuration
-expectedDoorState :: Monad m => GState m OpenClose
-expectedDoorState = do
-  set <- sunset 
-  rise <- sunrise 
-  currentTime <- utcTimeOfDay `liftM` (gets $ currentTime . world)
-  return $ if rise <= currentTime && currentTime <= set
-             then Opened
-             else Closed
+dayNight :: Config -> WorldState -> DayNight
+dayNight conf world = let
+  set = sunset conf world
+  rise = sunrise conf world
+  time = utcTimeOfDay (currentTime world)
+  in if rise <= time && time <= set
+             then Daytime
+             else Nighttime
 
+-- | lift a config/world function to a GState 
+liftG :: Monad m => (Config -> WorldState -> a) ->  GState m a
+liftG f = do
+  conf <- gets config
+  world <- gets world
+
+  return $ f conf world
 
 displayFromState :: Monad m => DisplayMode ->  GState  m String
 displayFromState TimeM = liftM show $ gets (currentTime.world)
-displayFromState SunriseM = liftM (("^ "++) . show) $ sunrise
-displayFromState SunsetM = liftM (("v "++) . show) $ sunset
+displayFromState SunriseM = liftM (("^ "++) . show) (liftG sunrise)
+displayFromState SunsetM = liftM (("v "++) . show) (liftG sunset)
 displayFromState LongitudeM = liftM (("Lo "++) . show) $ gets (longitute.config)
 displayFromState LatitudeM = liftM (("La "++) . show) $ gets (latitude.config)
 
@@ -145,8 +154,16 @@ out :: PiState -> PiState -> IO ()
 out _ _ = return ()
 
 -- | Analyse a world state and generate an event
-step :: WorldState -> WorldState -> Maybe Event
-step old new = Nothing
+step :: Config -> WorldState -> WorldState -> Maybe Event
+step conf old new = let
+  oldDayNight = dayNight conf old
+  newDayNight = dayNight conf new
+
+  in case (oldDayNight, newDayNight) of
+    (Nighttime, Daytime) -> Just Sunrise
+    (Daytime, Nighttime) -> Just Sunset
+    _ -> Nothing
+    
 
 -- * Automaton
 
@@ -178,7 +195,7 @@ automaton = Automaton exitOn
     ex <- gets (extension.io)
     newWorld <- readWorld ex
     put global { world =  newWorld }
-    return (step oldWorld newWorld)
+    return (step (config global) oldWorld newWorld)
 
   transition ev state
     | ev `elem` [Sunrise, OpenDoor]
