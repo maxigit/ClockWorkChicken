@@ -15,6 +15,12 @@ build-type:          Simple
 -- extra-source-files:  
 cabal-version:       >=1.10
 
+flag  test-hspec
+    Description: Enable or disable Hspec tests.
+    Default: True
+    manual: True
+
+
 library
   exposed-modules: CWC, Data.Automaton     
     , CWC.Mock
@@ -24,7 +30,7 @@ library
 
   -- other-modules:       
   -- other-extensions:    
-  build-depends:       base >=4.7 && <4.8
+  build-depends:       base >=4.5 && <4.8
                        , time
                        , horizon
                        , containers
@@ -35,7 +41,7 @@ library
 executable doorTimer
   main-is : doorTimer.hs
   hs-source-dirs:      executables
-  build-depends:       base >=4.7 && <4.8
+  build-depends:       base >=4.5 && <4.8
                        , CWC
                        , time
                        , mtl, transformers
@@ -45,12 +51,15 @@ test-suite hspec
     main-is: Spec.hs
     hs-source-dirs: tests,src 
 
-    build-depends:
-        base, hspec, HUnit
-        , CWC
-        , time
-        , horizon
-        , mtl, transformers
-        , hspec-expectations-lifted
+    if !flag(test-hspec)
+        buildable: False
+    else
+        build-depends:
+           base, hspec, HUnit
+           , CWC
+           , time
+           , horizon
+           , mtl, transformers
+           , hspec-expectations-lifted
     default-language: Haskell2010
 
