@@ -1,6 +1,7 @@
 module CWCSpec where
 
 import CWC
+import CWCHelper
 import Data.Automaton
 import System.RaspberryPi
 
@@ -124,15 +125,25 @@ spec = do
         ev `shouldBe` (Just Sunrise)
 
     context "when sunset" $ do
-      it "should send a SUNSET event"
-        pending
+      let global = setNextCurrentTime (2015, 12, 3) (23, 30, 0)
+              (setCurrentTime (2015, 12, 3) (12,0,0) defGlobal)
+      it "should send a SUNSET event" $ flip evalStateT global $ do
+        ev <- nextEvent automaton
+        ev `shouldBe` (Just Sunset)
 
     context "when sun already rised" $ do
-      it "shouldn't sent any event" $ do
-        pending
-    context "when sun already sunset" $ do
-      it "shouldn't sent any event" $ do
-        pending
+      let global = setNextCurrentTime (2015, 12, 3) (14, 30, 0)
+              (setCurrentTime (2015, 12, 3) (12,0,0) defGlobal)
+      it "shouldn't sent any event" $ flip evalStateT global $ do
+        ev <- nextEvent automaton
+        ev `shouldBe` Nothing
+
+    context "when sun already set" $ do
+      let global = setNextCurrentTime (2015, 12, 3) (02, 00, 0)
+              (setCurrentTime (2015, 12, 3) (02,30,0) defGlobal)
+      it "shouldn't sent any event" $ flip evalStateT global $ do
+        ev <- nextEvent automaton
+        ev `shouldBe` Nothing
 
     context "door closed" $ do
       it "should send a DoorClosed event" $ do
