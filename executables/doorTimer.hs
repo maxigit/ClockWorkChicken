@@ -28,7 +28,7 @@ testEx = PiIO readWorld
       answer <- liftIO getLine
       if (map toLower answer) `elem` ["y", "yes"]
          then let time = currentTime oldWorld
-                  newTime = addUTCTime (3600) time 
+                  newTime = addUTCTime (3600*6) time 
               in return oldWorld {currentTime = newTime }
               
 
@@ -39,7 +39,10 @@ testEx = PiIO readWorld
       displays <- mapM displayFromState modes
       let format s m | m == mode = "*** " ++ s ++ " ***"
                      | otherwise = "    " ++ s ++ "    "
-      liftIO $ mapM_ putStrLn (zipWith format displays modes)
+
+      liftIO $ do
+        putStrLn (replicate 38 '-')
+        mapM_ putStrLn (zipWith format displays modes)
 
 
     openDoor     = error "todo :openDoor"
