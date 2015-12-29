@@ -13,10 +13,10 @@ mockPiIO ::  PiIO IO
 mockPiIO = (piIO :: PiIO IO)
   { readWorld = mockReadWorld
   , displayWorld = mockDisplayWorld
-  -- , openDoor = mockOpenDoor
-  -- , closeDoor = mockCloseDoor
-  -- , lockDoor = mockLockDoor
-  -- , unlockDoor = mockUnlockDoor
+  , openDoor = mockOpenDoor
+  , closeDoor = mockCloseDoor
+  , lockDoor = mockLockDoor
+  , unlockDoor = mockUnlockDoor
   , displayTime = mockDisplayTime
   }
 
@@ -49,11 +49,13 @@ mockDisplayWorld world mode = do
     mapM_ putStrLn (zipWith format displays modes)
 
 
-mockOpenDoor     = error "todo :opendoor"
-  
-mockCloseDoor    = error "todo :closeDoor"
-mockLockDoor     = error "todo :lockDoor"
-mockUnlockDoor   = error "todo :unlockDoor"
+callDefault message action = lift (putStrLn message' ) >> action piIO
+  where message' = "===========> " ++ message
+
+mockOpenDoor     = callDefault "opening door" openDoor
+mockCloseDoor    = callDefault "closing door" closeDoor
+mockLockDoor     = callDefault "locking door" lockDoor
+mockUnlockDoor   = callDefault "unlocking door" unlockDoor
 mockDisplayTime  = error "todo :displayTime"
 
 -- * Menus
