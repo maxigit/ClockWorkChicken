@@ -19,7 +19,7 @@ data Pin = Pin1
          | Pin14
          | Pin15
          | Pin16
-         deriving (Show, Read, Eq, Ord, Enum)
+         deriving (Show, Read, Eq, Ord, Enum, Bounded)
 
 data Level = Low | High deriving (Show, Read, Eq, Ord, Enum)
 

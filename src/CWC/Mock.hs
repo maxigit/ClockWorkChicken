@@ -8,6 +8,8 @@ import Data.Maybe
 import Control.Monad.State
 import Data.Time.Clock (getCurrentTime, UTCTime, addUTCTime) 
 import System.IO
+
+import System.RaspberryPi
 -- | 
 mockPiIO ::  PiIO IO 
 mockPiIO = (piIO :: PiIO IO)
@@ -47,7 +49,18 @@ mockDisplayWorld world mode = do
   liftIO $ do
     putStrLn (replicate 38 '-')
     mapM_ putStrLn (zipWith format displays modes)
+  displayPins
 
+displayPins = do
+  io <- gets io
+  liftIO $ do 
+    values <-  mapM (readPin io) [minBound..maxBound]
+    let toChar Low = '_'
+        toChar High = '^'
+    putStrLn (map toChar values)
+
+  
+  
 
 callDefault message action = lift (putStrLn message' ) >> action piIO
   where message' = "===========> " ++ message
