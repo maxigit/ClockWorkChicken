@@ -11,9 +11,10 @@ import Control.Monad.Reader
 import Control.Monad.IO.Class
 
 import System.RaspberryPi
+import System.RaspberryPi.Mock.IO as M
 
-testPi :: Pi IO (PiIO IO) 
-testPi  = Pi  
+testPi' :: Pi IO (PiIO IO) 
+testPi'  = Pi  
     readPin
     writePin
     mockPiIO
@@ -27,6 +28,8 @@ testPi  = Pi
     writePin pin value = do
       putStrLn ("write pin #" ++ show pin ++ " -> " ++ show value)
 
+testPi :: Pi IO (PiIO IO) 
+testPi = M.pi mockPiIO
 -- main :: IO GlobalState
 main = do
   utc <- getCurrentTime
@@ -40,5 +43,6 @@ main = do
       global = GlobalState config world io
 
       initialPi = PiState DoorClosed DoorClosed TimeM
-  evalStateT (runAutomaton automaton initialPi) global
+  run io $ evalStateT (runAutomaton automaton initialPi) global >> return ()
+  return ()
 
