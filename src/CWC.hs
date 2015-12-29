@@ -144,6 +144,7 @@ data PiIO m = PiIO
   , displayWorld :: WorldState -> DisplayMode -> GState m ()
   , openDoor :: GState m ()
   , closeDoor :: GState m ()
+  , stopDoor :: GState m ()
   , lockDoor :: GState m ()
   , unlockDoor :: GState m ()
   , displayTime :: UTCTime -> GState m ()
@@ -156,16 +157,21 @@ lockDoorPin = Pin3
 unlockDoorPin = Pin4
 
 piIO :: Monad m => PiIO m
-piIO = PiIO rw dw od cd ld ud dt where
+piIO = PiIO rw dw od cd sd ld ud dt where
      rw = error "readlWorld not implemented"
      dw = error "displayWorld not implemented"
      od = do io <- gets io
              lift $ writePin io openDoorPin High 
      cd = do io <- gets io
              lift $ writePin io closeDoorPin High
+     sd = do io <- gets io
+             lift $ writePin io closeDoorPin Low
+             lift $ writePin io openDoorPin Low
      ld = do io <- gets io
+             lift $ writePin io closeDoorPin Low
              lift $ writePin io lockDoorPin High
      ud = do io <- gets io
+             lift $ writePin io lockDoorPin Low 
              lift $ writePin io unlockDoorPin High 
      dt = error "displayTme not implemented"
 
@@ -204,8 +210,12 @@ automaton = Automaton exitOn
     where go Nothing _ = return ()
           go _ state | doorState state == Opening
                      = gets (extension.io) >>= openDoor
+          go _ state | doorState state == DoorOpened
+                     = gets (extension.io) >>= stopDoor
           go _ state | doorState state == Closing
                      = gets (extension.io) >>= closeDoor
+          go _ state | doorState state == DoorClosed
+                     = gets (extension.io) >>= stopDoor
           go _ _ = return ()
 
   exitState _ _ = return () -- @todo
