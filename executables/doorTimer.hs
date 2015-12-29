@@ -3,7 +3,8 @@ module Main where
 import CWC
 import Data.Automaton
 
-import Data.Time.Clock (getCurrentTime, UTCTime) 
+import Data.Char (toLower)
+import Data.Time.Clock (getCurrentTime, UTCTime, addUTCTime) 
 import Data.Time (getCurrentTimeZone)
 import Control.Monad.State
 import Control.Monad.Reader
@@ -20,13 +21,32 @@ testEx = PiIO readWorld
               unlockDoor
               displayTime
   where
-    readWorld = error "todo :readWorld"
-    displayWorld = error "todo :displayWorld"
-    openDoor = error "todo :openDoor"
-    closeDoor = error "todo :closeDoor"
-    lockDoor = error "todo :lockDoor"
-    unlockDoor = error "todo :unlockDoor"
-    displayTime = error "todo :displayTime"
+    readWorld :: GState IO WorldState
+    readWorld    = do
+      oldWorld <- gets world
+      liftIO $ print "do you want to increase time?"
+      answer <- liftIO getLine
+      if (map toLower answer) `elem` ["y", "yes"]
+         then let time = currentTime oldWorld
+                  newTime = addUTCTime (3600) time 
+              in return oldWorld {currentTime = newTime }
+              
+
+         else return oldWorld
+         -- | Display all mode with a * in front of the current mode
+    displayWorld world mode = do
+      let modes = [minBound..maxBound]
+      displays <- mapM displayFromState modes
+      let format s m | m == mode = "*** " ++ s ++ " ***"
+                     | otherwise = "    " ++ s ++ "    "
+      liftIO $ mapM_ putStrLn (zipWith format displays modes)
+
+
+    openDoor     = error "todo :openDoor"
+    closeDoor    = error "todo :closeDoor"
+    lockDoor     = error "todo :lockDoor"
+    unlockDoor   = error "todo :unlockDoor"
+    displayTime  = error "todo :displayTime"
 
 testPi :: Pi IO (PiIO IO) 
 testPi  = Pi  
