@@ -149,6 +149,27 @@ data PiIO m = PiIO
   , displayTime :: UTCTime -> GState m ()
   }
 
+-- | Default value for PiIO . Can be seen as the base class
+openDoorPin = Pin1
+closeDoorPin = Pin2
+lockDoorPin = Pin3
+unlockDoorPin = Pin4
+
+piIO :: Monad m => PiIO m
+piIO = PiIO rw dw od cd ld ud dt where
+     rw = error "readlWorld not implemented"
+     dw = error "displayWorld not implemented"
+     od = do io <- gets io
+             lift $ writePin io openDoorPin High 
+     cd = do io <- gets io
+             lift $ writePin io closeDoorPin High
+     ld = do io <- gets io
+             lift $ writePin io lockDoorPin High
+     ud = do io <- gets io
+             lift $ writePin io unlockDoorPin High 
+     dt = error "displayTme not implemented"
+
+
 -- * Out
 out :: PiState -> PiState -> IO ()
 out _ _ = return ()

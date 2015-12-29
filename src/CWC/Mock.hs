@@ -10,13 +10,15 @@ import Data.Time.Clock (getCurrentTime, UTCTime, addUTCTime)
 import System.IO
 -- | 
 mockPiIO ::  PiIO IO 
-mockPiIO = PiIO mockReadWorld
-              mockDisplayWorld
-              mockOpenDoor
-              mockCloseDoor
-              mockLockDoor
-              mockUnlockDoor
-              mockDisplayTime
+mockPiIO = (piIO :: PiIO IO)
+  { readWorld = mockReadWorld
+  , displayWorld = mockDisplayWorld
+  -- , openDoor = mockOpenDoor
+  -- , closeDoor = mockCloseDoor
+  -- , lockDoor = mockLockDoor
+  -- , unlockDoor = mockUnlockDoor
+  , displayTime = mockDisplayTime
+  }
 
 mockReadWorld :: GState IO WorldState
 mockReadWorld    = do
@@ -47,7 +49,8 @@ mockDisplayWorld world mode = do
     mapM_ putStrLn (zipWith format displays modes)
 
 
-mockOpenDoor     = error "todo :openDoor"
+mockOpenDoor     = error "todo :opendoor"
+  
 mockCloseDoor    = error "todo :closeDoor"
 mockLockDoor     = error "todo :lockDoor"
 mockUnlockDoor   = error "todo :unlockDoor"
