@@ -17,6 +17,7 @@ cabal-version:       >=1.10
 
 library
   exposed-modules: CWC, Data.Automaton     
+    , CWC.Mock
     , System.RaspberryPi
     , System.RaspberryPi.Mock
     , System.RaspberryPi.Mock.IO
