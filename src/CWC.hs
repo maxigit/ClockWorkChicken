@@ -137,16 +137,20 @@ displayFromState LongitudeM = liftM (("Lo "++) . show) $ gets (longitute.config)
 displayFromState LatitudeM = liftM (("La "++) . show) $ gets (latitude.config)
 
 
+-- * Commands
+-- | Possible commands to drive the RaspberryPi (open/close) door  etct
+data MotorState = Forward | Backward | Stop deriving (Show, Read, Eq, Enum, Bounded)
+data Command = DoorMotor MotorState
+             | LockMotor MotorState
+             deriving (Show, Read, Eq)
+--
 -- * In
--- * Pi IO extension
+-- * Pi Record implementing the processing of the command
+-- allows to switch between real Raspberry Pi and different Mock
 data PiIO m = PiIO
   { readWorld :: GState m WorldState
   , displayWorld :: WorldState -> DisplayMode -> GState m ()
-  , openDoor :: GState m ()
-  , closeDoor :: GState m ()
-  , stopDoor :: GState m ()
-  , lockDoor :: GState m ()
-  , unlockDoor :: GState m ()
+  , execute :: Command -> GState m ()
   , displayTime :: UTCTime -> GState m ()
   }
 
@@ -157,22 +161,18 @@ lockDoorPin = Pin3
 unlockDoorPin = Pin4
 
 piIO :: Monad m => PiIO m
-piIO = PiIO rw dw od cd sd ld ud dt where
+piIO = PiIO rw dw ex dt where
      rw = error "readlWorld not implemented"
      dw = error "displayWorld not implemented"
-     od = do io <- gets io
-             lift $ writePin io openDoorPin High 
-     cd = do io <- gets io
-             lift $ writePin io closeDoorPin High
-     sd = do io <- gets io
-             lift $ writePin io closeDoorPin Low
-             lift $ writePin io openDoorPin Low
-     ld = do io <- gets io
-             lift $ writePin io closeDoorPin Low
-             lift $ writePin io lockDoorPin High
-     ud = do io <- gets io
-             lift $ writePin io lockDoorPin Low 
-             lift $ writePin io unlockDoorPin High 
+     ex command = do
+      io <- gets io
+      lift $ case command of
+        DoorMotor Forward -> writePin io openDoorPin High  >> writePin io closeDoorPin Low
+        DoorMotor Stop -> writePin io openDoorPin Low  >> writePin io closeDoorPin Low
+        DoorMotor Backward -> writePin io openDoorPin Low  >> writePin io closeDoorPin High
+        LockMotor Forward -> writePin io lockDoorPin High  >> writePin io unlockDoorPin Low
+        LockMotor Stop -> writePin io lockDoorPin Low  >> writePin io unlockDoorPin Low
+        LockMotor Backward -> writePin io lockDoorPin Low  >> writePin io unlockDoorPin High
      dt = error "displayTme not implemented"
 
 
@@ -208,15 +208,15 @@ automaton = Automaton exitOn
     (displayWorld ex) (worldState) (displayMode new)
 
     where go Nothing _ = return ()
-          go _ state | doorState state == Opening
-                     = gets (extension.io) >>= openDoor
-          go _ state | doorState state == DoorOpened
-                     = gets (extension.io) >>= stopDoor
-          go _ state | doorState state == Closing
-                     = gets (extension.io) >>= closeDoor
-          go _ state | doorState state == DoorClosed
-                     = gets (extension.io) >>= stopDoor
+          go _ state | doorState state == Opening    = exec (DoorMotor Forward)
+                     | doorState state == DoorOpened = exec (DoorMotor Stop)
+                     | doorState state == Closing    = exec (DoorMotor Backward)
+                     | doorState state == DoorClosed = exec (DoorMotor Stop)
           go _ _ = return ()
+          exec command = do
+            ext <- gets (extension . io)
+            (execute ext) command
+
 
   exitState _ _ = return () -- @todo
 

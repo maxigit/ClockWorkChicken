@@ -15,10 +15,7 @@ mockPiIO ::  PiIO IO
 mockPiIO = (piIO :: PiIO IO)
   { readWorld = mockReadWorld
   , displayWorld = mockDisplayWorld
-  , openDoor = mockOpenDoor
-  , closeDoor = mockCloseDoor
-  , lockDoor = mockLockDoor
-  , unlockDoor = mockUnlockDoor
+  , execute = mockExecute
   , displayTime = mockDisplayTime
   }
 
@@ -68,10 +65,7 @@ displayPins = do
 callDefault message action = lift (putStrLn message' ) >> action piIO
   where message' = "===========> " ++ message
 
-mockOpenDoor     = callDefault "opening door" openDoor
-mockCloseDoor    = callDefault "closing door" closeDoor
-mockLockDoor     = callDefault "locking door" lockDoor
-mockUnlockDoor   = callDefault "unlocking door" unlockDoor
+mockExecute command = callDefault (show command) (\p -> execute p command)
 mockDisplayTime  = error "todo :displayTime"
 
 -- * Menus

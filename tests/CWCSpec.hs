@@ -23,13 +23,7 @@ spec = do
                   0 0
       defWorld = WorldState $ UTCTime (fromGregorian 2015 12 03) 0
       defExtension :: PiIO IO
-      defExtension = PiIO (error "readlWorld") 
-                          (error "displayWorld")
-                          (error "openDoor")
-                          (error "closeDoor")
-                          (error "lockDoor")
-                          (error "unlockDoor")
-                          (error "@todo displayTime")
+      defExtension = piIO
       defIo = Pi (error "readPin")
                  (error "writePin")
                  defExtension
