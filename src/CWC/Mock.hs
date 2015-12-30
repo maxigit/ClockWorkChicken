@@ -53,11 +53,14 @@ mockDisplayWorld world mode = do
 
 displayPins = do
   io <- gets io
+  let toChar pin = do
+        value <- readPin io pin
+        return $ case value of 
+          Low -> '_'
+          High -> toEnum $ fromEnum '1' + (fromEnum pin `mod` 10)
   liftIO $ do 
-    values <-  mapM (readPin io) [minBound..maxBound]
-    let toChar Low = '_'
-        toChar High = '^'
-    putStrLn (map toChar values)
+    values <-  mapM toChar [minBound..maxBound]
+    putStrLn values
 
   
   

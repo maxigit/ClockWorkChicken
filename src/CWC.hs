@@ -204,8 +204,8 @@ automaton = Automaton exitOn
   enterState old new = do
     worldState <- gets world
     ex <- gets (extension.io)
-    (displayWorld ex) (worldState) (displayMode new)
     go old new
+    (displayWorld ex) (worldState) (displayMode new)
 
     where go Nothing _ = return ()
           go _ state | doorState state == Opening
