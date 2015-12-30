@@ -42,7 +42,7 @@ main = do
       io = testPi
       global = GlobalState config world io
 
-      initialPi = PiState DoorClosed DoorClosed TimeM
+      initialPi = PiState Ajar  Ajar  TimeM
   run io $ evalStateT (runAutomaton automaton initialPi) global >> return ()
   return ()
 

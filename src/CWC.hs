@@ -53,6 +53,7 @@ data DoorState = DoorClosed
              | Opening
              | DoorOpened
              | Closing
+             | Ajar
      deriving (Show, Read, Eq)
 
 data PiState = PiState
@@ -252,11 +253,11 @@ automaton = Automaton exitOn
 
   transition ev state
     | ev `elem` [Sunrise, OpenDoor]
-       && doorState state `elem` [DoorClosed, Closing]
+       && doorState state `notElem` [DoorOpened, Opening]
        = state {  doorState = Opening }
 
     | ev `elem` [Sunset, CloseDoor]
-       && doorState state `elem` [DoorOpened, Opening]
+       && doorState state `notElem` [DoorClosed, Closing]
        = state {  doorState = Closing }
 
   transition (Door Closed) state = state { doorState = DoorClosed }
@@ -264,10 +265,10 @@ automaton = Automaton exitOn
 
   transition NextDisplayMode state = state { displayMode = nextDisplayMode (displayMode state) }
 
-  transition ev state = error $ "Not transiton for "
-                              ++ show  ev
-                              ++ " from "
+  transition ev state = error $ "Not transiton : "
                               ++ show state
+                              ++ " ==> "
+                              ++ show  ev
 
 
     
