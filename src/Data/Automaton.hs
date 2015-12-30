@@ -6,6 +6,7 @@ module Data.Automaton
 ) where
 
 import Control.Monad
+import Data.Maybe
 
 --  data or type class ?
 --  | Describes an Automaton
@@ -14,7 +15,7 @@ data Automaton m s ev = Automaton
   , enterState :: Maybe s -> s -> m () -- call when state change
   , exitState :: s -> s -> m () -- call when  state change
   , transition :: ev -> s -> s 
-  , nextEvent :: m (Maybe  ev) -- get the next even from the outside world
+  , nextEvent :: m [ev] -- get the next events from the outside world
   }
 
   
@@ -35,7 +36,9 @@ runAutomaton autom state = do
 runAutomaton' :: (Monad m, Similar s) => Automaton m s ev -> s -> m s
 runAutomaton' autom state = do
   ev <- (nextEvent autom)
-  newState <- case ev of
+  -- @todo process all event if needed
+  -- at the moment we just discard extra event
+  newState <- case listToMaybe ev of
     Nothing -> return state
     Just ev -> do
       let newState = transition autom ev state 

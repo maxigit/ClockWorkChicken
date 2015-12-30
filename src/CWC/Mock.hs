@@ -29,6 +29,10 @@ mockReadWorld    = do
                 ,('c', "Door closed", storePin doorClosedPin High)
                 ,('d', "Door in the middle", storePin doorClosedPin Low
                                           >> storePin doorOpenedPin Low)
+                ,('O', "Lock opened", storePin lockOpenedPin High)
+                ,('C', "Lock closed", storePin lockClosedPin High)
+                ,('d', "Lock in the middle", storePin lockClosedPin Low
+                                          >> storePin lockOpenedPin Low)
                 ]
       advanceClock hour = do
           global <- get

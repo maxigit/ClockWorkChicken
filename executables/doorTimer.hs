@@ -43,6 +43,13 @@ main = do
       global = GlobalState config world io
 
       initialPi = PiState Ajar  Ajar  TimeM
-  run io $ evalStateT (runAutomaton automaton initialPi) global >> return ()
+      enterSt = enterState automaton
+      enterState' old new  = do
+        liftIO $ putStrLn (replicate 50 '=')
+        liftIO $ print new
+        enterSt old new
+        
+      automaton' = automaton { enterState = enterState' }
+  run io $ evalStateT (runAutomaton automaton' initialPi) global >> return ()
   return ()
 

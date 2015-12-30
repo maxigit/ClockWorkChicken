@@ -13,6 +13,7 @@ import Data.Time.LocalTime
 
 import Test.Hspec hiding(shouldBe)
 import Test.Hspec.Expectations.Lifted(shouldBe)
+import Mock
 -- import Test.HUnit
 
 spec :: Spec
@@ -30,7 +31,7 @@ spec = do
                  defExtension
                 (error "run")
       defGlobal :: GlobalState IO
-      defGlobal = GlobalState defConfig defWorld defIo
+      defGlobal = GlobalState defConfig defWorld (testPi [])
       
   describe "Sunset/Sunrise" $ do
     context "without time offsets" $ do

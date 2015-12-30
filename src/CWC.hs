@@ -7,6 +7,7 @@ import qualified Data.Time.Horizon as H
 import Data.Automaton
 
 import Control.Monad.State
+import Data.Maybe
 
 -- * State
 -- | The state (actual or desired) of a door
@@ -19,7 +20,7 @@ data DayNight = Daytime | Nighttime deriving (Show, Read, Eq)
 -- hold current time, and the state of different sensors
 data WorldState = WorldState 
   { currentTime :: UTCTime
-  , opennedDoorSensor :: Level
+  , openedDoorSensor :: Level
   , closedDoorSensor :: Level
   , doorLockedSensor :: Level
   , doorUnlockedSensor :: Level
@@ -167,7 +168,7 @@ unlockDoorPin = Pin4
 doorClosedPin = Pin5
 doorOpenedPin = Pin6
 lockClosedPin = Pin7
-lockOpenPin = Pin8
+lockOpenedPin = Pin8
 
 piIO :: Monad m => PiIO m
 piIO = PiIO rw dw ex dt where
@@ -177,10 +178,10 @@ piIO = PiIO rw dw ex dt where
       lift $ do
         dop <- readPin io doorOpenedPin 
         dc <- readPin io doorClosedPin
-        lo <- readPin io lockOpenPin
+        lo <- readPin io lockOpenedPin
         lc <- readPin io lockClosedPin
 
-        return $ world { opennedDoorSensor = dop
+        return $ world { openedDoorSensor = dop
                      , closedDoorSensor = dc
                      , doorLockedSensor = lc
                      , doorUnlockedSensor = lo
@@ -204,17 +205,31 @@ out :: PiState -> PiState -> IO ()
 out _ _ = return ()
 
 -- | Analyse a world state and generate an event
-step :: Config -> WorldState -> WorldState -> Maybe Event
+step :: Config -> WorldState -> WorldState -> [Event]
 step conf old new = let
   oldDayNight = dayNight conf old
   newDayNight = dayNight conf new
 
-  in case (oldDayNight, newDayNight) of
+
+  events = [ case (oldDayNight, newDayNight) of
     (Nighttime, Daytime) -> Just Sunrise
     (Daytime, Nighttime) -> Just Sunset
+    _ ->  Nothing
+    ] ++ map (uncurry processSensor)
+          [ (openedDoorSensor, Door Opened)
+          , (closedDoorSensor, Door Closed )
+          ]
+  processSensor view event = case (view old, view new) of
+    (Low, High) -> Just event
     _ -> Nothing
+  
+
+    -- send the first event
+    -- all the others are discarded
+  in catMaybes events
     
 
+  
 -- * Automaton
 
 automaton :: Monad m => Automaton (GState m) PiState Event
@@ -260,8 +275,12 @@ automaton = Automaton exitOn
        && doorState state `notElem` [DoorClosed, Closing]
        = state {  doorState = Closing }
 
-  transition (Door Closed) state = state { doorState = DoorClosed }
-  transition (Door Opened) state = state { doorState = DoorOpened }
+  transition (Door Closed) state
+    | doorState state `elem` [Closing, Ajar] 
+      = state { doorState = DoorClosed }
+  transition (Door Opened) state
+    | doorState state `elem` [Opening, Ajar] 
+      = state { doorState = DoorOpened }
 
   transition NextDisplayMode state = state { displayMode = nextDisplayMode (displayMode state) }
 
