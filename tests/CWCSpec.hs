@@ -21,7 +21,8 @@ spec = do
       defConfig = Config zone
                   (-2.3508) (48.8567) 
                   0 0
-      defWorld = WorldState $ UTCTime (fromGregorian 2015 12 03) 0
+      defWorld = WorldState ( UTCTime (fromGregorian 2015 12 03) 0)
+                            Low Low Low Low
       defExtension :: PiIO IO
       defExtension = piIO
       defIo = Pi (error "readPin")

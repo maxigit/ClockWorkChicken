@@ -25,15 +25,23 @@ mockReadWorld    = do
   liftIO $ putStrLn "press ? or h for help"
   let actions = [('6', "Advance clock by 6 ", advanceClock 6)
                 ,('1', "Advance clock by 6 ", advanceClock 1)
-                ,('o', "Door opened", undefined)
-                ,('c', "Door closed", undefined)
+                ,('o', "Door opened", storePin doorOpenedPin High)
+                ,('c', "Door closed", storePin doorClosedPin High)
+                ,('d', "Door in the middle", storePin doorClosedPin Low
+                                          >> storePin doorOpenedPin Low)
                 ]
       advanceClock hour = do
+          global <- get
           let time = currentTime oldWorld
               newTime = addUTCTime (3600*hour) time 
-          return $ oldWorld {currentTime = newTime }
-  newWorld <- menu actions
-  return $ fromMaybe oldWorld newWorld  
+          put global {world =  oldWorld {currentTime = newTime } }
+
+      storePin pin level = do
+        io <- gets io
+        liftIO $ writePin io pin level
+
+  menu actions
+  readWorld piIO
 
 
 -- | Display all mode with a * in front of the current mode

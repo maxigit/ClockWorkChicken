@@ -19,6 +19,10 @@ data DayNight = Daytime | Nighttime deriving (Show, Read, Eq)
 -- hold current time, and the state of different sensors
 data WorldState = WorldState 
   { currentTime :: UTCTime
+  , opennedDoorSensor :: Level
+  , closedDoorSensor :: Level
+  , doorLockedSensor :: Level
+  , doorUnlockedSensor :: Level
   } deriving (Show, Read)
 
 -- | What to display on the screen/LCD
@@ -159,10 +163,28 @@ openDoorPin = Pin1
 closeDoorPin = Pin2
 lockDoorPin = Pin3
 unlockDoorPin = Pin4
+doorClosedPin = Pin5
+doorOpenedPin = Pin6
+lockClosedPin = Pin7
+lockOpenPin = Pin8
 
 piIO :: Monad m => PiIO m
 piIO = PiIO rw dw ex dt where
-     rw = error "readlWorld not implemented"
+     rw = do
+      world <- gets world
+      io <- gets io
+      lift $ do
+        dop <- readPin io doorOpenedPin 
+        dc <- readPin io doorClosedPin
+        lo <- readPin io lockOpenPin
+        lc <- readPin io lockClosedPin
+
+        return $ world { opennedDoorSensor = dop
+                     , closedDoorSensor = dc
+                     , doorLockedSensor = lc
+                     , doorUnlockedSensor = lo
+                     }
+      
      dw = error "displayWorld not implemented"
      ex command = do
       io <- gets io
@@ -241,6 +263,11 @@ automaton = Automaton exitOn
   transition (Door Opened) state = state { doorState = DoorOpened }
 
   transition NextDisplayMode state = state { displayMode = nextDisplayMode (displayMode state) }
+
+  transition ev state = error $ "Not transiton for "
+                              ++ show  ev
+                              ++ " from "
+                              ++ show state
 
 
     

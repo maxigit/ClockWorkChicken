@@ -1,1 +1,1 @@
-set path=.,src/**,executables/**
+set path=.,src/**,executables/**,tests/**
