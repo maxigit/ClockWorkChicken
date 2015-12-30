@@ -24,6 +24,8 @@ data WorldState = WorldState
   , closedDoorSensor :: Level
   , doorLockedSensor :: Level
   , doorUnlockedSensor :: Level
+  , openButton :: Level
+  , displayButton :: Level
   } deriving (Show, Read)
 
 -- | What to display on the screen/LCD
@@ -169,6 +171,8 @@ doorClosedPin = Pin5
 doorOpenedPin = Pin6
 lockClosedPin = Pin7
 lockOpenedPin = Pin8
+openButtonPin = Pin9
+displayButtonPin = Pin10
 
 piIO :: Monad m => PiIO m
 piIO = PiIO rw dw ex dt where
@@ -176,15 +180,21 @@ piIO = PiIO rw dw ex dt where
       world <- gets world
       io <- gets io
       lift $ do
-        dop <- readPin io doorOpenedPin 
+        dop <- readPin io doorOpenedPin
         dc <- readPin io doorClosedPin
         lo <- readPin io lockOpenedPin
         lc <- readPin io lockClosedPin
+        op <- readPin io openButtonPin
+        db <- readPin io displayButtonPin
+
+
 
         return $ world { openedDoorSensor = dop
                      , closedDoorSensor = dc
                      , doorLockedSensor = lc
                      , doorUnlockedSensor = lo
+                     , openButton = op
+                     , displayButton = db
                      }
       
      dw = error "displayWorld not implemented"
@@ -218,7 +228,10 @@ step conf old new = let
     ] ++ map (uncurry processSensor)
           [ (openedDoorSensor, Door Opened)
           , (closedDoorSensor, Door Closed )
+          , (openButton, OpenDoor)
+          , (displayButton, NextDisplayMode)
           ]
+
   processSensor view event = case (view old, view new) of
     (Low, High) -> Just event
     _ -> Nothing

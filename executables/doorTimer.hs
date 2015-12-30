@@ -38,7 +38,7 @@ main = do
   let config = Config zone
                   (20/60) (53.75)
                   0 0 
-      world = WorldState utc Low Low Low Low
+      world = WorldState utc Low Low Low Low Low Low
       io = testPi
       global = GlobalState config world io
 

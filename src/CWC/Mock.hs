@@ -21,6 +21,7 @@ mockPiIO = (piIO :: PiIO IO)
 
 mockReadWorld :: GState IO WorldState
 mockReadWorld    = do
+  -- resetPushButtons
   oldWorld <- gets world
   liftIO $ putStrLn "press ? or h for help"
   let actions = [('6', "Advance clock by 6 ", advanceClock 6)
@@ -33,6 +34,8 @@ mockReadWorld    = do
                 ,('C', "Lock closed", storePin lockClosedPin High)
                 ,('d', "Lock in the middle", storePin lockClosedPin Low
                                           >> storePin lockOpenedPin Low)
+                ,('p', "open Push button", storePin openButtonPin High)
+                ,('m', "display mode button", storePin displayButtonPin High)
                 ]
       advanceClock hour = do
           global <- get
@@ -44,6 +47,7 @@ mockReadWorld    = do
         io <- gets io
         liftIO $ writePin io pin level
 
+  mapM_ (\p -> storePin p Low) [openButtonPin, displayButtonPin]
   menu actions
   readWorld piIO
 
