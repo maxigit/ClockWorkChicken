@@ -3,22 +3,29 @@
 -- or mocked one (text-base or GUI).
 module System.RaspberryPi where
 
-data Pin = Pin1
-         | Pin2
-         | Pin3
-         | Pin4
+data Pin = -- Pin1
+         -- | Pin2
+         Pin3
+         -- | Pin4
          | Pin5
-         | Pin6
+         -- | Pin6
          | Pin7
          | Pin8
-         | Pin9
+         -- | Pin9
          | Pin10
          | Pin11
          | Pin12
          | Pin13
-         | Pin14
+         -- | Pin14
          | Pin15
          | Pin16
+         | Pin18
+         | Pin19
+         | Pin21
+         | Pin22
+         | Pin23
+         | Pin24
+         | Pin26
          deriving (Show, Read, Eq, Ord, Enum, Bounded)
 
 data Level = Low | High deriving (Show, Read, Eq, Ord, Enum)

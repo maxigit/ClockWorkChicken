@@ -163,15 +163,15 @@ data PiIO m = PiIO
   }
 
 -- | Default value for PiIO . Can be seen as the base class
-openDoorPin = Pin1
-closeDoorPin = Pin2
-lockDoorPin = Pin3
-unlockDoorPin = Pin4
-doorClosedPin = Pin5
-doorOpenedPin = Pin6
-lockClosedPin = Pin7
-lockOpenedPin = Pin8
-openButtonPin = Pin9
+openDoorPin = Pin3
+closeDoorPin = Pin5
+doorClosedPin = Pin7
+doorOpenedPin = Pin8
+lockDoorPin = Pin11
+unlockDoorPin = Pin12
+lockClosedPin = Pin13
+lockOpenedPin = Pin15
+openButtonPin = Pin16
 displayButtonPin = Pin10
 
 piIO :: Monad m => PiIO m
